@@ -7,10 +7,9 @@ USEAGE
 python3 Conv_XRAIN2Cfrad.py path/to/raw(P008)_file
 *Archives of raw files (*P008*.tgz) and intermediate files (*R005*.tgz) must be in the same directory
 *Converted cfradial file is saved in the current directory.
-*Quality flag(RQF0) is not output in the current version.
 *Any meta data (e.g., radar coefficient, pulse width) is not output in the current version. 
 
-HISTORY
+HISTORY(yyyy/mm/dd)
 2022/10/30 ver 0.1 (First created) by A.NISHII
 2022/12/14 ver 0.2 Added quality flag in output by A.NISHII
 
@@ -342,7 +341,7 @@ class Converter:
         nc = self.cf
 
         sweep_n = nc.createVariable('sweep_number',np.dtype('int32').char,('sweep'))
-        sweep_n[:] = 1
+        sweep_n[:] = 0
 
         sweep_mode = nc.createVariable('sweep_mode','S1',('sweep','string_length'))
         sweep_mode[:] = 'sector'
@@ -411,7 +410,7 @@ class Converter:
         nc = self.cf
         
         varinfo = self.varinfo['RQF0']
-        print('Save QF')
+        #print('Save QF')
         ncvar = nc.createVariable(varinfo[0],np.dtype('uint8').char,('time','range'),fill_value=self._FillValueU8)
         ncvar[:] = self.qflg
         ncvar.long_name = varinfo[0]
