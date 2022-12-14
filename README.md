@@ -17,6 +17,6 @@ netCDF4
 スクリプトを実行したディレクトリに変換されたファイルが保存されているはず。  
   
 # その他
-・正常に変換されているか確認するためのコード"check_xrain_cfrad.py"を用意しました。出てくる図はあまりきれいではないですが確認用にどうぞ。  
-\*使用にはmatplotlibと<a href="https://arm-doe.github.io/pyart/index.html">arm-Pyart</a>が必要です。
+<li>正常に変換されているか確認するためのコード"check_xrain_cfrad.py"を用意しました。あまりきれいな図は出ませんが確認用にどうぞ。</li>
+* 使用にはmatplotlibと<a href="https://arm-doe.github.io/pyart/index.html">arm-Pyart</a>が必要です。
   
