@@ -8,7 +8,7 @@ numpy
 netCDF4  
 
 # 使い方
-1. P008ファイル(RAWデータがアーカイブされたtarfile)とZ005ファイル(一時処理データ)を同じディレクトリに保存  
+1. P008ファイル(RAWデータがアーカイブされたtarfile)とR005ファイル(一次処理データ)を同じディレクトリに保存  
   
 2. 以下のように実行(path/to/P008はP008ファイルのパスに置き換えること)  
 <code>python3 Conv_xrain2cfrad.py path/to/P008</code>  
