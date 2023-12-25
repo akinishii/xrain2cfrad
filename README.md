@@ -24,6 +24,7 @@ netCDF4
 ・コードの可読性向上
 
 # 参考
-jmardr_cfradial: https://github.com/wm-ytakano/jmardr_cfradial
-Cf-Radial ver1.5 document: https://github.com/NCAR/CfRadial/blob/master/docs/CfRadialDoc.v1.5.20211201.pdf
-水防災オープンデータ提供サービスMPレーダ雨量計RAW・１次処理データ共通フォーマット: http://www.river.or.jp/koeki/opendata/data/03_RAWdata_Data%20format%20specifications_1.4.pdf
+jmardr_cfradial: https://github.com/wm-ytakano/jmardr_cfradial <br>
+Cf-Radial ver1.5 document: https://github.com/NCAR/CfRadial/blob/master/docs/CfRadialDoc.v1.5.20211201.pdf <br>
+水防災オープンデータ提供サービスMPレーダ雨量計RAW・１次処理データ共通フォーマット:<br>
+http://www.river.or.jp/koeki/opendata/data/03_RAWdata_Data%20format%20specifications_1.4.pdf
