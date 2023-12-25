@@ -18,8 +18,10 @@ netCDF4
   
 # その他 (Ohters)
 正常に変換されているか確認するためのコード"check_xrain_cfrad.py"を用意しました。あまりきれいな図は出ませんが確認用にどうぞ。
-* 使用にはmatplotlibと<a href="https://arm-doe.github.io/pyart/index.html">arm-Pyart</a>が必要です  
   
 # Todo
 ・P008，R005のみの変換に対応させる<br>
 ・コードの可読性向上
+
+# 参考
+jmardr_cfradial: https://github.com/wm-ytakano/jmardr_cfradial
