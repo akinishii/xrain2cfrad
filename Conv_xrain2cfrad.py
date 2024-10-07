@@ -1,6 +1,6 @@
 #%%
 """
-Conv_XRAIN2CFrad.py ver 0.2 coded by A.NISHII (Nagoya Univ., Japan)
+Conv_XRAIN2CFrad.py ver 1.0 coded by A.NISHII (Nagoya Univ., Japan)
 Convert XRAIN raw and intermediate data to CF-radial ver 1.5
 
 USEAGE
@@ -9,9 +9,14 @@ python3 Conv_XRAIN2Cfrad.py path/to/raw(P008)_file
 *Converted cfradial file is saved in the current directory.
 *Any meta data (e.g., radar coefficient, pulse width) is not output in the current version. 
 
+Format of the input file name: cfrad.site_name-yyyymmdd-hhmmss-ELxxxxxx-DEGyyy.nc
+                               *xxxxxx: elevation number of input file
+                               *yyy   : tenfold of the elevation angle
+
 HISTORY(yyyy/mm/dd)
 2022/10/30 ver 0.1 (First created) by A.NISHII
 2022/12/14 ver 0.2 Added quality flag in output by A.NISHII
+2024/10/07 ver 1.0 Bug fixed by A.NISHII
 
 MIT License
 Copyright (c) 2022 Akira NISHII
@@ -38,6 +43,7 @@ import struct
 import datetime
 import tarfile
 from os.path import basename
+from os import makedirs
 from sys import argv, exit
 
 #%%
@@ -51,7 +57,7 @@ class Converter:
         self.flag_ow = False
         if mode == 0:
             #P008 mode
-            self.n_var = 8
+            self.n_var = 8 #Fixed to 8
             #varname_xrain:[varname_cf,standard (long) name,unit]
             self.varinfo = {'PHN0':['DBMHC','log_power_co_polar_h','dbm'],
                             'PHM0':['PHMTI','log_power_co_polar_h_mti','dbm'],
@@ -63,7 +69,7 @@ class Converter:
                             'PW00':['WIDTH','doppler_spectrum_width','m/s']}
         else:
             #Z005 mode
-            self.n_var = 4
+            self.n_var = 4 #Fixed to 4 (QF is added later)
                         #varname_xrain:[varname_cf,standard (long) name,unit]
             self.varinfo = {'RZH0':['DBZ','equivalent_reflectivity_factor','DBZ'],
                             'RZDR':['ZDR','log_differential_reflectivity_hv','DB'],
@@ -74,11 +80,14 @@ class Converter:
         if flag_overwrite: self.flag_ow = True
 
 
-    def convert(self,fname,ncname):
+    def convert(self,fname,outdir):
         self.fname = fname
-        self.ncname = ncname
+        #self.ncname = ncname
+        self.outdir = outdir
         self.unzip_tar()
         self.read_xrain_ppi()
+        #Remove -P008 and -R005 from the input file name, and then add the tenfold of the fixed angle to the output netCDF file name.
+        self.ncname = outdir+'/cfrad.' + basename(fname).split('.')[0].replace('-P008','').replace('-R005','') + f'-DEG{int(self.fixed_angle*10):03d}.nc'
         self.write_cfrad()
     
 
@@ -263,8 +272,8 @@ class Converter:
         nc.setncattr("history","")
         nc.setncattr("comment","")
         rname = basename(self.fname).split('-')[0].replace('0','')
-        nc.setncattr("instrument_name",rname)
-        nc.setncattr('site_name','')
+        nc.setncattr("instrument_name",'XRAIN '+rname)
+        nc.setncattr('site_name',rname)
         nc.setncattr('scan_name','')
 
 
@@ -347,7 +356,7 @@ class Converter:
         sweep_mode[:] = 'sector'
 
         fx_angle = nc.createVariable('fixed_angle',np.dtype('float32').char,('sweep'))
-        fx_angle[:] = self.el[0]
+        fx_angle[:] = self.fixed_angle
         fx_angle.units = 'degrees'
 
         sweep_start_ray = nc.createVariable('sweep_start_ray_index',np.dtype('int32').char,('sweep'))
@@ -458,18 +467,19 @@ class Converter:
 def main():
     fname_P008_tar = argv[1]
     fname_R005_tar = fname_P008_tar.replace('P008','R005')
+    outdir = './out_nc'
+    makedirs(outdir,exist_ok=True)
     print('Input file name(Raw, P008): '+fname_P008_tar)
     print('Input file name(Intermediated, R005): '+fname_R005_tar)
-    out_nc = 'cfrad.' + basename(fname_P008_tar).split('.')[0].replace('-P008','') + '.nc'
     conv_P = Converter(mode=0,flag_overwrite=False)
-    conv_P.convert(fname_P008_tar,out_nc)
+    conv_P.convert(fname_P008_tar,outdir)
     conv_Z = Converter(mode=1,flag_overwrite=True)
-    conv_Z.convert(fname_R005_tar,out_nc)
-    print("Convert success: Saved to "+out_nc)
+    conv_Z.convert(fname_R005_tar,outdir)
+    print('Convert success: Saved to '+conv_Z.ncname)
 
 #%%
 if __name__ == '__main__':
     if len(argv) != 2:
-        print(f"ERROR: Invalid number of arguments: N_of_args = {len(argv)}")
+        print(f'ERROR: Invalid number of arguments: N_of_args = {len(argv)}')
         exit(1)
     main()
