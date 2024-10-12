@@ -4,8 +4,8 @@ XRAINのRAWデータと1次処理データをCf-Radialに変換するPythonス�
 
 # 必要なもの (Requirement)
 Python >= 3.6  
-numpy  
-netCDF4  
+numpy 1.x
+netCDF4 
 
 # 使い方 (Useage)
 1. P008ファイルのアーカイブ(DIASから取得できる，RAWデータのtarfile)とR005ファイルのアーカイブを(同様に取得できる，一次処理データのtarfile)を同じディレクトリに保存する。 
@@ -21,7 +21,7 @@ xxxxxx: 仰角番号, yyy: 仰角の10倍値
 
 # その他 (Ohters)
 正常に変換されているか確認するためのコード"check_xrain_cfrad.py"を用意しました。あまりきれいな図は出ませんが確認用にどうぞ。<br>
-また，REF, VEL, ZDR, KDP，RHOHVを描画するDraw_XRAIN_cfrad.pyも用意しました。<br>
+また，REF, VEL, ZDR, KDP，RHOHV, WIDTHを描画するDraw_XRAIN_cfrad.pyも用意しました。<br>
 これらの実行にはarm_pyart(https://github.com/ARM-DOE/pyart) が必要です。
 
 # Todo
