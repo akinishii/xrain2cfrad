@@ -1,6 +1,6 @@
 #%%
 """
-Conv_XRAIN2CFrad.py ver 1.0 coded by A.NISHII (Nagoya Univ., Japan)
+Conv_XRAIN2CFrad.py ver 1.1 coded by A.NISHII (Nagoya Univ., Japan)
 Convert XRAIN raw and intermediate data to CF-radial ver 1.5
 
 USEAGE
@@ -8,6 +8,7 @@ python3 Conv_XRAIN2Cfrad.py path/to/raw(P008)_file
 *Archives of raw files (*P008*.tgz) and intermediate files (*R005*.tgz) must be in the same directory
 *Converted cfradial file is saved in the current directory.
 *Any meta data (e.g., radar coefficient, pulse width) is not output in the current version. 
+*You can change the output directory of converted files by changing Converter._outdir
 
 Format of the input file name: cfrad.site_name-yyyymmdd-hhmmss-ELxxxxxx-DEGyyy.nc
                                *xxxxxx: elevation number of input file
@@ -17,6 +18,7 @@ HISTORY(yyyy/mm/dd)
 2022/10/30 ver 0.1 (First created) by A.NISHII
 2022/12/14 ver 0.2 Added quality flag in output by A.NISHII
 2024/10/07 ver 1.0 Bug fixed by A.NISHII
+2024/10/07 ver 1.1 Modified functions for setting output dir
 
 MIT License
 Copyright (c) 2022 Akira NISHII
@@ -51,6 +53,7 @@ class Converter:
     _FillValueU8  = 255
     _FillValueU16 = 0
     _FillValueF32 = -327.68
+    _outdir = './out_nc' #Save directory for a converted netCDF file.
 
     def __init__(self,mode,flag_overwrite=False):
         self.mode = mode
@@ -76,18 +79,20 @@ class Converter:
                             'RKDP':['KDP','specific_differential_phase_hv','degrees/km'],
                             'RRR0':['RRR','radar_estimated_rain_rate','mm/hr'],
                             'RQF0':['QF','radar_quality_mask','unitless']}
+        
 
         if flag_overwrite: self.flag_ow = True
 
 
-    def convert(self,fname,outdir):
+    def convert(self,fname,outdir=None):
         self.fname = fname
         #self.ncname = ncname
-        self.outdir = outdir
+        if outdir is not None: self._outdir = outdir
+        makedirs(self._outdir,exist_ok=True)
         self.unzip_tar()
         self.read_xrain_ppi()
         #Remove -P008 and -R005 from the input file name, and then add the tenfold of the fixed angle to the output netCDF file name.
-        self.ncname = outdir+'/cfrad.' + basename(fname).split('.')[0].replace('-P008','').replace('-R005','') + f'-DEG{int(self.fixed_angle*10):03d}.nc'
+        self.ncname = self._outdir+'/cfrad.' + basename(fname).split('.')[0].replace('-P008','').replace('-R005','') + f'-DEG{int(self.fixed_angle*10):03d}.nc'
         self.write_cfrad()
     
 
@@ -235,9 +240,9 @@ class Converter:
             size = (16 + 2*self.n_range) * self.n_ray
             fmt = '>' + '2H2hIi{0}B'.format(self.n_range) * self.n_ray
             buf = f.read(size)
-            rdata = np.array(struct.unpack(fmt,buf),dtype='uint8').reshape((self.n_ray,self.n_range+6))
+            rdata = np.array(struct.unpack(fmt,buf),dtype='int64').reshape((self.n_ray,self.n_range+6))
 
-        values = rdata[:,6:]
+        values = rdata[:,6:].astype('uint8')
 
         return values
 
@@ -467,14 +472,12 @@ class Converter:
 def main():
     fname_P008_tar = argv[1]
     fname_R005_tar = fname_P008_tar.replace('P008','R005')
-    outdir = './out_nc'
-    makedirs(outdir,exist_ok=True)
     print('Input file name(Raw, P008): '+fname_P008_tar)
     print('Input file name(Intermediated, R005): '+fname_R005_tar)
     conv_P = Converter(mode=0,flag_overwrite=False)
-    conv_P.convert(fname_P008_tar,outdir)
+    conv_P.convert(fname_P008_tar)
     conv_Z = Converter(mode=1,flag_overwrite=True)
-    conv_Z.convert(fname_R005_tar,outdir)
+    conv_Z.convert(fname_R005_tar)
     print('Convert success: Saved to '+conv_Z.ncname)
 
 #%%
