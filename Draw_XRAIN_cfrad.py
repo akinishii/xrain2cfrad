@@ -32,7 +32,7 @@ warnings.simplefilter('ignore')
 
 #%%
 ###Settings###
-fname = './out_nc/cfrad.HAMAMATSU0-20241003-1731-EL010000-DEG017.nc'
+fname = '../out_nc/cfrad.HAMAMATSU0-20241003-1731-EL010000-DEG017.nc'
 use_flist = False #True: Read files from flistname (You can process multiple files at once.) False: Read a file set in fname
 flistname = 'flist2.txt'
 

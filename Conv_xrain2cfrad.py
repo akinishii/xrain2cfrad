@@ -1,6 +1,6 @@
 #%%
 """
-Conv_XRAIN2CFrad.py ver 1.1 coded by A.NISHII (Nagoya Univ., Japan)
+Conv_XRAIN2CFrad.py ver 1.2 coded by A.NISHII (Nagoya Univ., Japan)
 Convert XRAIN raw and intermediate data to CF-radial ver 1.5
 
 USEAGE
@@ -19,6 +19,7 @@ HISTORY(yyyy/mm/dd)
 2022/12/14 ver 0.2 Added quality flag in output by A.NISHII
 2024/10/07 ver 1.0 Bug fixed by A.NISHII
 2024/10/07 ver 1.1 Modified functions for setting output dir
+2024/10/14 ver 1.2 Modified the format of instrument namme
 
 MIT License
 Copyright (c) 2022 Akira NISHII
@@ -53,7 +54,7 @@ class Converter:
     _FillValueU8  = 255
     _FillValueU16 = 0
     _FillValueF32 = -327.68
-    _outdir = './out_nc' #Save directory for a converted netCDF file.
+    _outdir = '../out_nc' #Save directory for a converted netCDF file.
 
     def __init__(self,mode,flag_overwrite=False):
         self.mode = mode
@@ -277,7 +278,7 @@ class Converter:
         nc.setncattr("history","")
         nc.setncattr("comment","")
         rname = basename(self.fname).split('-')[0].replace('0','')
-        nc.setncattr("instrument_name",'XRAIN '+rname)
+        nc.setncattr("instrument_name",'XRAIN_'+rname)
         nc.setncattr('site_name',rname)
         nc.setncattr('scan_name','')
 
