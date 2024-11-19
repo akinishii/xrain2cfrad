@@ -170,7 +170,7 @@ for f in fnames:
     print('DBZ')
     cm = display.plot_ppi_map("DBZ",0,mask_tuple=mask_tuple,cmap=cmapz_draw,norm=normz,resolution='10m',
                             min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
-                            fig=fig,ax=axes[0][0],raster=True, embelish=True,
+                            fig=fig,ax=axes[0][0],raster=True, embellish=True,
                             lon_lines=lon_ticks,lat_lines=lat_ticks,colorbar_label='dBZ',ticks=ticksz)
     axes[0][0].set(xlabel='',ylabel='',title='REF')
     #Draw circles and a hair on REF
@@ -185,7 +185,7 @@ for f in fnames:
     print('VEL')
     cm = display.plot_ppi_map("VEL",0,mask_tuple=mask_tuple,cmap=cmapv_draw,norm=normv,resolution='10m',
                             min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
-                            fig=fig,ax=axes[0][1],raster=True, embelish=True,
+                            fig=fig,ax=axes[0][1],raster=True, embellish=True,
                             lon_lines=lon_ticks,lat_lines=lat_ticks,colorbar_label='m s$^{-1}$',ticks=ticksv)
     axes[0][1].set(xlabel='',ylabel='',title='VEL')
     if draw_hair:
@@ -199,28 +199,28 @@ for f in fnames:
     print('ZDR')
     cm = display.plot_ppi_map("ZDR",0,mask_tuple=mask_tuple,cmap=cmapzdr_draw,norm=normzdr,resolution='10m',
                             min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
-                            fig=fig,ax=axes[1][0],raster=True, embelish=True,
+                            fig=fig,ax=axes[1][0],raster=True, embellish=True,
                             lon_lines=lon_ticks,lat_lines=lat_ticks,colorbar_label='dB',ticks=tickszdr)
     axes[1][0].set(xlabel='',ylabel='',title='ZDR')
     #KDP
     print('KDP')
     cm = display.plot_ppi_map("KDP",0,mask_tuple=mask_tuple,cmap=cmapkdp_draw,norm=normkdp,resolution='10m',
                             min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
-                            fig=fig,ax=axes[1][1],raster=True, embelish=True,
+                            fig=fig,ax=axes[1][1],raster=True, embellish=True,
                             lon_lines=lon_ticks,lat_lines=lat_ticks,colorbar_label='deg. km$^{-1}$',ticks=tickskdp)
     axes[1][1].set(xlabel='',ylabel='',title='KDP')
     #RHOHV
     print('RHOHV')
     cm = display.plot_ppi_map("RHOHV",0,mask_tuple=mask_tuple,cmap=cmaprhv_draw,norm=normrhv,resolution='10m',
                             min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
-                            fig=fig,ax=axes[2][0],raster=True, embelish=True,
+                            fig=fig,ax=axes[2][0],raster=True, embellish=True,
                             lon_lines=lon_ticks,lat_lines=lat_ticks,colorbar_label='dimensionless',ticks=ticksrhv)
     axes[2][0].set(xlabel='',ylabel='',title='RHOHV')
     #Hide the last axis
     print('WIDTH')
     cm = display.plot_ppi_map("WIDTH",0,mask_tuple=mask_tuple,cmap=cmapw_draw,norm=normw,resolution='10m',
                             min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
-                            fig=fig,ax=axes[2][1],raster=True, embelish=True,
+                            fig=fig,ax=axes[2][1],raster=True, embellish=True,
                             lon_lines=lon_ticks,lat_lines=lat_ticks,colorbar_label='m s$^{-1}$',ticks=ticksw)
     axes[2][1].set(xlabel='',ylabel='',title='WIDTH')
 
