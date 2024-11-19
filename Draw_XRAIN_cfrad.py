@@ -13,6 +13,7 @@ python3 Draw_XRAIN_cfrad.py
 HISTORY(yyyy/mm/dd)
 2024/10/07 ver 1.0 (First created) by A.NISHII
 2024/10/12 ver 1.1 Bug fixed & Drawing Doppler width implemented by A.NISHII
+2024/11/19 ver 1.2 Bug fixed by A.NISHII
 
 """
 
