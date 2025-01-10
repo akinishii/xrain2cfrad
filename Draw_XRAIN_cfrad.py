@@ -1,6 +1,6 @@
 #%%
 """
-Draw_XRAIN_cfrad.py ver 1.1 coded by A.NISHII (Nagoya Univ., Japan)
+Draw_XRAIN_cfrad.py ver 1.3 coded by A.NISHII (Nagoya Univ., Japan)
 Draw XRAIN PPI data from a cf-radial file converted by Conv_XRAIN2Cfrad.py
 
 USEAGE
@@ -14,6 +14,7 @@ HISTORY(yyyy/mm/dd)
 2024/10/07 ver 1.0 (First created) by A.NISHII
 2024/10/12 ver 1.1 Bug fixed & Drawing Doppler width implemented by A.NISHII
 2024/11/19 ver 1.2 Bug fixed by A.NISHII
+2025/01/10 ver 1.3 Modified order of parameters
 
 """
 
@@ -37,10 +38,17 @@ fname = '../out_nc/cfrad.HAMAMATSU0-20241003-1731-EL010000-DEG017.nc'
 use_flist = False #True: Read files from flistname (You can process multiple files at once.) False: Read a file set in fname
 flistname = 'flist2.txt'
 
-#extent=[137.6,34.65,137.8,34.85] ##[min_lon,min_lat,max_lon,max_lat]
 extent=[137.1,34.15,138.46,35.23] ##[min_lon,min_lat,max_lon,max_lat]
 lon_ticks = np.arange(137.1,138.46,0.5) #Locations of lon ticks
 lat_ticks = np.arange(34.15,35.23,0.5)   #Locations of lat ticks
+
+figdir = './fig_ppi_ql' #Directory to save figures
+
+#Draw distances from the radar at REF and VEL maps
+draw_cirle = True
+circle_dis = np.arange(0,81,20)
+draw_hair  = True
+hairsize = 40 #size of hair (corresponding to plt.scatter's size)
 
 #Set colors for REF
 clevsz = np.arange(0,71,5)
@@ -67,15 +75,8 @@ clevsw=np.arange(0,10.1,1.0)
 cmapw="rainbow"
 ticksw = clevsw #Locs of ticks in colorbar (can be same as clevs)
 
-#Draw distances from the radar at REF and VEL maps
-draw_cirle = True
-circle_dis = np.arange(0,81,20)
-draw_hair  = True
-hairsize = 40 #size of hair (corresponding to plt.scatter's size)
-
 mask_tuple=None #Conditions for masking (see documents of Pyart for detail)
 
-figdir = '../fig_ppi_ql' #Directory to save figures
 
 ###End of Settings###
 
@@ -171,7 +172,7 @@ for f in fnames:
     print('DBZ')
     cm = display.plot_ppi_map("DBZ",0,mask_tuple=mask_tuple,cmap=cmapz_draw,norm=normz,resolution='10m',
                             min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
-                            fig=fig,ax=axes[0][0],raster=True, embellish=True,
+                            fig=fig,ax=axes[0][0],raster=True,
                             lon_lines=lon_ticks,lat_lines=lat_ticks,colorbar_label='dBZ',ticks=ticksz)
     axes[0][0].set(xlabel='',ylabel='',title='REF')
     #Draw circles and a hair on REF
@@ -186,7 +187,7 @@ for f in fnames:
     print('VEL')
     cm = display.plot_ppi_map("VEL",0,mask_tuple=mask_tuple,cmap=cmapv_draw,norm=normv,resolution='10m',
                             min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
-                            fig=fig,ax=axes[0][1],raster=True, embellish=True,
+                            fig=fig,ax=axes[0][1],raster=True,
                             lon_lines=lon_ticks,lat_lines=lat_ticks,colorbar_label='m s$^{-1}$',ticks=ticksv)
     axes[0][1].set(xlabel='',ylabel='',title='VEL')
     if draw_hair:
@@ -200,28 +201,28 @@ for f in fnames:
     print('ZDR')
     cm = display.plot_ppi_map("ZDR",0,mask_tuple=mask_tuple,cmap=cmapzdr_draw,norm=normzdr,resolution='10m',
                             min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
-                            fig=fig,ax=axes[1][0],raster=True, embellish=True,
+                            fig=fig,ax=axes[1][0],raster=True,
                             lon_lines=lon_ticks,lat_lines=lat_ticks,colorbar_label='dB',ticks=tickszdr)
     axes[1][0].set(xlabel='',ylabel='',title='ZDR')
     #KDP
     print('KDP')
     cm = display.plot_ppi_map("KDP",0,mask_tuple=mask_tuple,cmap=cmapkdp_draw,norm=normkdp,resolution='10m',
                             min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
-                            fig=fig,ax=axes[1][1],raster=True, embellish=True,
+                            fig=fig,ax=axes[1][1],raster=True,
                             lon_lines=lon_ticks,lat_lines=lat_ticks,colorbar_label='deg. km$^{-1}$',ticks=tickskdp)
     axes[1][1].set(xlabel='',ylabel='',title='KDP')
     #RHOHV
     print('RHOHV')
     cm = display.plot_ppi_map("RHOHV",0,mask_tuple=mask_tuple,cmap=cmaprhv_draw,norm=normrhv,resolution='10m',
                             min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
-                            fig=fig,ax=axes[2][0],raster=True, embellish=True,
+                            fig=fig,ax=axes[2][0],raster=True,
                             lon_lines=lon_ticks,lat_lines=lat_ticks,colorbar_label='dimensionless',ticks=ticksrhv)
     axes[2][0].set(xlabel='',ylabel='',title='RHOHV')
     #Hide the last axis
     print('WIDTH')
     cm = display.plot_ppi_map("WIDTH",0,mask_tuple=mask_tuple,cmap=cmapw_draw,norm=normw,resolution='10m',
                             min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
-                            fig=fig,ax=axes[2][1],raster=True, embellish=True,
+                            fig=fig,ax=axes[2][1],raster=True,
                             lon_lines=lon_ticks,lat_lines=lat_ticks,colorbar_label='m s$^{-1}$',ticks=ticksw)
     axes[2][1].set(xlabel='',ylabel='',title='WIDTH')
 
@@ -234,4 +235,5 @@ for f in fnames:
 
     plt.close()
 
+print('Finished')
 # %%

@@ -19,10 +19,11 @@ HISTORY(yyyy/mm/dd)
 2022/12/14 ver 0.2 Added quality flag in output by A.NISHII
 2024/10/07 ver 1.0 Bug fixed by A.NISHII
 2024/10/07 ver 1.1 Modified functions for setting output dir
-2024/10/14 ver 1.2 Modified the format of instrument namme
+2024/10/14 ver 1.2 Modified the format of instrument name
+2025/01/10 ver 1.3 Added some exception handlings in I/O
 
 MIT License
-Copyright (c) 2022 Akira NISHII
+Copyright (c) 2025 Akira NISHII
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and 
 associated documentation files (the "Software"), to deal in the Software without restriction, 
@@ -40,6 +41,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+from genericpath import exists
 import netCDF4
 import numpy as np
 import struct
@@ -54,7 +56,7 @@ class Converter:
     _FillValueU8  = 255
     _FillValueU16 = 0
     _FillValueF32 = -327.68
-    _outdir = '../out_nc' #Save directory for a converted netCDF file.
+    _outdir = './out_nc' #Save directory for a converted netCDF file.
 
     def __init__(self,mode,flag_overwrite=False):
         self.mode = mode
@@ -142,11 +144,13 @@ class Converter:
             buf = f.read(16)
             date_str = struct.unpack('>16s',buf)[0].decode(encoding=enc)[0:10]
             self.date_str = date_str
+            #print(date_str,buf)
 
             #Read fixed elevation angle of the PPI scan
             f.seek(48,0)
             buf = f.read(2)
             self.fixed_angle = struct.unpack('>h',buf)[0] / 100.
+            #print('EL_raw: ',struct.unpack('>h',buf)[0])
 
             #62~173 bytes: Radar informations
             f.seek(62,0)
@@ -164,6 +168,7 @@ class Converter:
         buf = self.decode_bcd(header[40])
         buf2 = self.decode_bcd(header[41])
         self.anntena_rotetion_speed = 100. * buf + buf2 / 10.
+        #print("Anntena speed",self.anntena_rotetion_speed)
 
         self.location = np.empty(3,dtype='float64')  #List for the anntena location [lon, lat, altitude]
         self.prf = np.empty(2,dtype='float64') #List for pulse repetation frequencies [PRF1, PRF2]
@@ -216,10 +221,10 @@ class Converter:
         if self.n_read == 0:
             rdata[abs(rdata[:,0]-rdata[:,1])>35000,1] += 36000
             self.az = ((rdata[:,0] + rdata[:,1]) / 200.).astype('float64')
-            self.az[self.az>360] -=360
-            self.el = ((rdata[:,2] + rdata[:,3]) / 200.).astype('float64')
+            self.az%=360
             self.el = ((rdata[:,2] + rdata[:,3]) / 200.).astype('float64')
             self.nyq = rdata[:,4] * (10.**rdata[:,5])
+            
 
         if (pname == 'PW00') or (pname == 'RRR0'):
             values = ((rdata[:,6:] - 1) / 100.).astype('float32')
@@ -472,14 +477,23 @@ class Converter:
 #%%
 def main():
     fname_P008_tar = argv[1]
+    if '-R005-' in fname_P008_tar:
+        raise ValueError(f'Input file name must be P008, not R005.\nInput file name: {fname_P008_tar}')
+    
+    print('Input file name (Raw, P008): '+fname_P008_tar)
+    if not exists(fname_P008_tar):
+        raise FileNotFoundError(f'{fname_P008_tar} Not Found!')
+    
     fname_R005_tar = fname_P008_tar.replace('P008','R005')
-    print('Input file name(Raw, P008): '+fname_P008_tar)
-    print('Input file name(Intermediated, R005): '+fname_R005_tar)
+    print('Input file name (Intermediated, R005): '+fname_R005_tar)
+    if not exists(fname_R005_tar):
+        raise FileNotFoundError(f'{fname_R005_tar} Not Found! P008 & R005 files must in the same directory')
+    
     conv_P = Converter(mode=0,flag_overwrite=False)
     conv_P.convert(fname_P008_tar)
     conv_Z = Converter(mode=1,flag_overwrite=True)
     conv_Z.convert(fname_R005_tar)
-    print('Convert success: Saved to '+conv_Z.ncname)
+    print('Convert success. Saved to: '+conv_Z.ncname)
 
 #%%
 if __name__ == '__main__':
