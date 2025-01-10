@@ -16,8 +16,12 @@ netCDF4
 3. "Convert success: Saved to cfrad.~.nc"(~はP008ファイルから取得した場所，日付，仰角番号情報)と表示されたら変換成功
 スクリプトを実行したディレクトリに変換されたファイルが保存されているはず<br>
 出力ファイルのフォーマット(XRAIN田村レーダーの場合)<br>
-cfrad.TAMURA0000-yyyymmdd-hhmm-ELxxxxxx-DEGyyy.nc<br>
-xxxxxx: 仰角番号, yyy: 仰角の10倍値
+cfrad.TAMURA0000-yyyymmdd-hhmm-ELxxxxxx-DEGeee.nc<br>
+xxxxxx: 仰角番号, eee: 仰角の10倍値
+
+# 注意 (Notes)
+レーダーによっては仰角番号が同じで場合でも仰角の値が少し(0.1~0.2度)ずれる場合があります。<br>
+これはXRAINのヘッダーに収録されている仰角情報がデータによって異なることにより生じるものです。
 
 # その他 (Ohters)
 正常に変換されているか確認するためのコード"check_xrain_cfrad.py"を用意しました。あまりきれいな図は出ませんが確認用にどうぞ。<br>
@@ -25,9 +29,10 @@ xxxxxx: 仰角番号, yyy: 仰角の10倍値
 これらの実行にはarm_pyart(https://github.com/ARM-DOE/pyart) が必要です。
 
 # Todo
-・P008，R005のみの変換に対応させる<br>
+・ヘッダー情報出力モードの実装<br>
 ・コードの可読性向上<br>
-・可視化コードの拡充
+・DIASから取ってきたデータをそのままのディレクトリ構造で処理できるモードの追加<br>
+・P008，R005のみの変換に対応させる<br>
 
 # 参考
 jmardr_cfradial: https://github.com/wm-ytakano/jmardr_cfradial <br>
