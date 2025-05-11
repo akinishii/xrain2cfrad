@@ -1,6 +1,6 @@
 #%%
 """
-Conv_XRAIN2CFrad.py ver 0.2 coded by A.NISHII
+Conv_XRAIN2CFrad.py ver 0.3 coded by A.NISHII
 Convert XRAIN raw and intermediate data to CF-radial ver 1.5
 
 USEAGE
@@ -12,6 +12,7 @@ python3 Conv_XRAIN2Cfrad.py path/to/raw(P008)_file
 HISTORY(yyyy/mm/dd)
 2022/10/30 ver 0.1 (First created) by A.NISHII
 2022/12/14 ver 0.2 Added quality flag in output by A.NISHII
+2025/05/11 ver 0.3 Added comments and fixed bug by A.NISHII
 
 MIT License
 Copyright (c) 2022-2025 Akira NISHII
@@ -32,9 +33,11 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+import argparse
 import datetime
 import struct
 import tarfile
+import os
 from os.path import basename
 from sys import argv, exit
 
@@ -46,8 +49,14 @@ class Converter:
     _FillValueU8 = 255
     _FillValueU16 = 0
     _FillValueF32 = -327.68
+    _WORKDIR = 'work_conv'
 
-    def __init__(self, mode, flag_overwrite=False):
+    def __init__(self, mode: int, flag_overwrite: bool = False):
+        """Initialize the converter.
+        Args:
+            mode (int): Mode of the converter. 0 for P008 mode, 1 for R005 mode.
+            flag_overwrite (bool): Flag to overwrite existing output file.
+        """
         self.mode = mode
         self.flag_ow = False
         if mode == 0:
@@ -78,8 +87,16 @@ class Converter:
 
         if flag_overwrite:
             self.flag_ow = True
+        
+        # 一時ディレクトリの作成
+        os.makedirs(self._WORKDIR, exist_ok=True)
 
-    def convert(self, fname, ncname):
+    def convert(self, fname: str, ncname: str):
+        """Convert XRAIN raw and intermediate data to CF-radial.
+        Args:
+            fname (str): Input file name.
+            ncname (str): Output file name.
+        """
         self.fname = fname
         self.ncname = ncname
         self.unzip_tar()
@@ -87,11 +104,15 @@ class Converter:
         self.write_cfrad()
 
     def unzip_tar(self):
+        """Unzip the input file.
+        """
         with tarfile.open(self.fname, 'r:gz') as tf:
             self.fnames = tf.getnames()
-            tf.extractall(path='work_conv')
+            tf.extractall(path=self._WORKDIR)
 
     def read_xrain_ppi(self):
+        """Read XRAIN PPI data.
+        """
         self.n_read = 0
         # Read header
         self.read_header(self.fnames[0])
@@ -108,10 +129,14 @@ class Converter:
             self.vars[self.n_read] = self.read_values(fname, pname)
             self.n_read += 1
 
-    def read_header(self, fname):
+    def read_header(self, fname: str):
+        """Read XRAIN PPI header.
+        Args:
+            fname (str): Input file name (extracted from the tar file).
+        """
         # Encodes of characters are iso2022_jp.
         enc = 'iso2022_jp'
-        with open('./work_conv/' + fname, 'rb') as f:
+        with open('./' + self._WORKDIR + '/' + fname, 'rb') as f:
             flag = struct.unpack('>B', f.read(1))[0]  # Check whether XRAIN PPI or not
             # print(flag)
             if int(flag) != 253:
@@ -190,8 +215,13 @@ class Converter:
         self.n_range = rinfo[37]  # Number of bins for each ray
         self.n_ray = rinfo[38]  # Number of rays
 
-    def read_values(self, fname, pname):
-        with open('./work_conv/' + fname, 'rb') as f:
+    def read_values(self, fname: str, pname: str):
+        """Read XRAIN PPI data.
+        Args:
+            fname (str): Input file name (extracted from the tar file).
+            pname (str): Parameter name.
+        """
+        with open('./' + self._WORKDIR + '/' + fname, 'rb') as f:
             buf = f.read(512)
             f.seek(512, 0)
             size = (16 + 2 * self.n_range) * self.n_ray
@@ -219,21 +249,28 @@ class Converter:
         return values
 
     # Function to decode quality flag (Currently not used)
-    def read_values_uint8(self, fname):
-        with open('./work_conv/' + fname, 'rb') as f:
+    def read_values_uint8(self, fname: str):
+        """Read quality flag.
+        Args:
+            fname (str): Input file name (extracted from the tar file).
+        """
+        with open('./' + self._WORKDIR + '/' + fname, 'rb') as f:
             buf = f.read(512)
 
             f.seek(512, 0)
             size = (16 + 2 * self.n_range) * self.n_ray
             fmt = '>' + '2H2hIi{0}B'.format(self.n_range) * self.n_ray
             buf = f.read(size)
-            rdata = np.array(struct.unpack(fmt, buf), dtype='uint8').reshape((self.n_ray, self.n_range + 6))
+            rdata = np.array(struct.unpack(fmt, buf), dtype='int32').reshape((self.n_ray, self.n_range + 6))
 
         values = rdata[:, 6:]
+        values = values.astype('uint8')
 
         return values
 
     def write_cfrad(self):
+        """Write data toCF-Radial file.
+        """
         mode = 'w'
         if self.flag_ow:
             mode = 'a'
@@ -252,6 +289,8 @@ class Converter:
         self.cf.close()
 
     def write_cf_gl_attr(self):
+        """Write global attributes to CF-Radial file.
+        """
         nc = self.cf
 
         nc.setncattr("Conventions", "Cf/Radial instrument_parameters")
@@ -268,6 +307,8 @@ class Converter:
         nc.setncattr('scan_name', '')
 
     def write_cf_dims(self):
+        """Create dimensions in CF-Radial file.
+        """
         nc = self.cf
 
         nc.createDimension('time', self.n_ray)
@@ -276,6 +317,8 @@ class Converter:
         nc.createDimension('string_length', None)
 
     def write_cf_gl_vars(self):
+        """Create global variables in CF-Radial file.
+        """
         nc = self.cf
         volume_number = nc.createVariable('volume_number', np.dtype('int32').char)
         volume_number[:] = 0
@@ -296,6 +339,8 @@ class Converter:
         time_ref.units = "unitless"
 
     def write_cf_coord_vars(self):
+        """Create coordinate variables in CF-Radial file.
+        """
         nc = self.cf
 
         time = nc.createVariable('time', np.dtype('double').char, ('time'))
@@ -318,6 +363,8 @@ class Converter:
         radar_range.axis = 'radial_range_coordinate'
 
     def write_cf_loc_vars(self):
+        """Create location variables (latitude, longitude, and altitude) in CF-Radial file.
+        """
         nc = self.cf
 
         lat = nc.createVariable('latitude', np.dtype('double').char)
@@ -333,6 +380,8 @@ class Converter:
         alt.units = 'meters'
 
     def write_cf_sweep_vars(self):
+        """Create sweep variables in CF-Radial file.
+        """
         nc = self.cf
 
         sweep_n = nc.createVariable('sweep_number', np.dtype('int32').char, ('sweep'))
@@ -352,6 +401,8 @@ class Converter:
         sweep_end_ray[:] = len(self.el) - 1
 
     def write_cf_azelnyq(self):
+        """Create azimuth, elevation, and nyquist velocity variables in CF-Radial file.
+        """
         nc = self.cf
 
         az = nc.createVariable('azimuth', np.dtype('float32').char, ('time'))
@@ -381,13 +432,24 @@ class Converter:
         nyq.axis = 'radial_azimuth_coordinate'
 
     def write_cf_data_vars(self):
+        """Create data variables in CF-Radial file.
+        """
         nc = self.cf
 
         for n in range(self.n_var):
             varinfo = self.varinfo[self.pnames[n]]
             self.Define_variable(nc, self.vars[n], varinfo[0], np.dtype('float32').char, varinfo[1], varinfo[2])
 
-    def Define_variable(self, nc, var, varname, dtype_char, standard_name, units):
+    def Define_variable(self, nc: netCDF4.Dataset, var: np.ndarray, varname: str, dtype_char: str, standard_name: str, units: str):
+        """Create data variables in CF-Radial file.
+        Args:
+            nc (netCDF4.Dataset): CF-Radial file.
+            var (numpy.ndarray): Data array.
+            varname (str): Variable name.
+            dtype_char (str): Data type character.
+            standard_name (str): Standard name.
+            units (str): Units.
+        """
         ncvar = nc.createVariable(varname, dtype_char, ('time', 'range'), fill_value=self._FillValueF32)
         ncvar[:] = var
         ncvar.long_name = standard_name
@@ -398,6 +460,8 @@ class Converter:
         return ncvar
 
     def write_cf_qflg(self):
+        """Create quality flag variables in CF-Radial file.
+        """
         nc = self.cf
 
         varinfo = self.varinfo['RQF0']
@@ -410,6 +474,8 @@ class Converter:
         ncvar.coodinates = 'evevation azimuth range'
 
     def calc_nyq_unfolded(self):
+        """Calculate the extended nyquist velocity for dual-PRF mode because velocity unfolding is already applied.
+        """
         prf1 = self.prf[0]
         prf2 = self.prf[1]
         prf_ref = max(prf1, prf2)
@@ -421,19 +487,32 @@ class Converter:
 
         return vel_ref * (prf_ref / gcd)
 
-    def split_byte(self, inbyte):
+    def split_byte(self, inbyte: int):
+        """Split a byte into two 4-bit values.
+        Args:
+            inbyte (int): Input byte.
+        """
         ms4bit = bin(inbyte >> 4)
         ls4bit = bin(inbyte & 0b00001111)
 
         return ms4bit, ls4bit
 
-    def decode_bcd(self, bcd_byte):
+    def decode_bcd(self, bcd_byte: int):
+        """Decode a BCD byte.
+        Args:
+            bcd_byte (int): Input BCD byte.
+        """
         ord_10, ord_1 = self.split_byte(bcd_byte)
 
         dec = 10 * int(ord_10, 2) + int(ord_1, 2)
         return dec
 
-    def calc_gcd(self, a, b):
+    def calc_gcd(self, a: int, b: int):
+        """Calculate the greatest common divisor.
+        Args:
+            a (int): First number.
+            b (int): Second number.
+        """
         while b != 0:
             rem = a % b
             a = b
@@ -443,11 +522,23 @@ class Converter:
 
 #%%
 def main():
-    fname_P008_tar = argv[1]
+    """Main function.
+    """
+    parser = argparse.ArgumentParser(description='Convert XRAIN raw (P008) and intermediate (R005) files to CF-Radial format. Both files must be in the same directory.')
+    parser.add_argument('fname_P008_tar', type=str, help='Input raw (P008) file name.')
+    parser.add_argument('-o', '--outdir', type=str, help='Output directory of the CF-Radial file.')
+    args = parser.parse_args()
+
+    fname_P008_tar = args.fname_P008_tar
     fname_R005_tar = fname_P008_tar.replace('P008', 'R005')
     print('Input file name(Raw, P008): ' + fname_P008_tar)
     print('Input file name(Intermediated, R005): ' + fname_R005_tar)
+    
+    # 出力ディレクトリの処理
     out_nc = 'cfrad.' + basename(fname_P008_tar).split('.')[0].replace('-P008', '') + '.nc'
+    if args.outdir:
+        out_nc = args.outdir + '/' + out_nc
+    
     conv_P = Converter(mode=0, flag_overwrite=False)
     conv_P.convert(fname_P008_tar, out_nc)
     conv_Z = Converter(mode=1, flag_overwrite=True)
@@ -457,7 +548,4 @@ def main():
 
 #%%
 if __name__ == '__main__':
-    if len(argv) != 2:
-        print(f"ERROR: Invalid number of arguments: N_of_args = {len(argv)}")
-        exit(1)
     main()
