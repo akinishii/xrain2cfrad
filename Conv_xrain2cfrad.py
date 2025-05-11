@@ -1,13 +1,13 @@
 #%%
 """
-Conv_XRAIN2CFrad.py ver 1.2 coded by A.NISHII (Nagoya Univ., Japan)
+Conv_XRAIN2CFrad.py ver 1.4 coded by A.NISHII
 Convert XRAIN raw and intermediate data to CF-radial ver 1.5
 
 USEAGE
 python3 Conv_XRAIN2Cfrad.py path/to/raw(P008)_file
 *Archives of raw files (*P008*.tgz) and intermediate files (*R005*.tgz) must be in the same directory
 *Converted cfradial file is saved in the current directory.
-*Any meta data (e.g., radar coefficient, pulse width) is not output in the current version. 
+*Any meta data (e.g., radar coefficient, pulse width) is not output in the current version.
 *You can change the output directory of converted files by changing Converter._outdir
 
 Format of the input file name: cfrad.site_name-yyyymmdd-hhmmss-ELxxxxxx-DEGyyy.nc
@@ -21,26 +21,28 @@ HISTORY(yyyy/mm/dd)
 2024/10/07 ver 1.1 Modified functions for setting output dir
 2024/10/14 ver 1.2 Modified the format of instrument name
 2025/01/10 ver 1.3 Added some exception handlings in I/O
+2025/05/11 ver 1.4 Added comments and fixed bug by A.NISHII (Copied from testdata)
 
 MIT License
-Copyright (c) 2025 Akira NISHII
+Copyright (c) 2022-2025 Akira NISHII
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and 
-associated documentation files (the "Software"), to deal in the Software without restriction, 
-including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, 
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
 subject to the following conditions:
 
-The above copyright notice and this permission notice (including the next paragraph) shall be 
+The above copyright notice and this permission notice (including the next paragraph) shall be
 included in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
-INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+import argparse
 from genericpath import exists
 import netCDF4
 import numpy as np
@@ -50,15 +52,24 @@ import tarfile
 from os.path import basename
 from os import makedirs
 from sys import argv, exit
+import os # Added for _WORKDIR
 
 #%%
 class Converter:
+    """Converter class for XRAIN data to CF-Radial format.
+    """
     _FillValueU8  = 255
     _FillValueU16 = 0
     _FillValueF32 = -327.68
-    _outdir = './out_nc' #Save directory for a converted netCDF file.
+    _WORKDIR = 'work_conv' # Temporary directory for extracted files
+    _OUTDIR = './out_nc' #Default Save directory for a converted netCDF file.
 
-    def __init__(self,mode,flag_overwrite=False):
+    def __init__(self,mode: int,flag_overwrite: bool =False):
+        """Initialize the converter.
+        Args:
+            mode (int): Mode of the converter. 0 for P008 mode, 1 for R005 mode.
+            flag_overwrite (bool): Flag to overwrite existing output file.
+        """
         self.mode = mode
         self.flag_ow = False
         if mode == 0:
@@ -85,27 +96,38 @@ class Converter:
         
 
         if flag_overwrite: self.flag_ow = True
+        # 一時ディレクトリの作成 (Added from testdata)
+        os.makedirs(self._WORKDIR,exist_ok=True)
 
 
-    def convert(self,fname,outdir=None):
+    def convert(self,fname: str,outdir: str =None):
+        """Convert XRAIN raw and intermediate data to CF-radial.
+        Args:
+            fname (str): Input file name.
+            outdir (str): Output directory. If None, use self._OUTDIR.
+        """
         self.fname = fname
         #self.ncname = ncname
-        if outdir is not None: self._outdir = outdir
-        makedirs(self._outdir,exist_ok=True)
+        if outdir is not None: 
+            self._OUTDIR = outdir
         self.unzip_tar()
         self.read_xrain_ppi()
         #Remove -P008 and -R005 from the input file name, and then add the tenfold of the fixed angle to the output netCDF file name.
-        self.ncname = self._outdir+'/cfrad.' + basename(fname).split('.')[0].replace('-P008','').replace('-R005','') + f'-DEG{int(self.fixed_angle*10):03d}.nc'
+        self.ncname = self._OUTDIR+'/cfrad.' + basename(fname).split('.')[0].replace('-P008','').replace('-R005','') + f'-DEG{int(self.fixed_angle*10):03d}.nc'
         self.write_cfrad()
     
 
     def unzip_tar(self):
+        """Unzip the input file.
+        """
         with tarfile.open(self.fname,'r:gz') as tf:
             self.fnames = tf.getnames()
-            tf.extractall(path='work_conv')
+            tf.extractall(path=self._WORKDIR) # Changed from 'work_conv'
 
 
     def read_xrain_ppi(self):
+        """Read XRAIN PPI data.
+        """
         self.n_read = 0
         #Read header
         self.read_header(self.fnames[0])
@@ -123,10 +145,14 @@ class Converter:
             self.n_read += 1
 
 
-    def read_header(self,fname):
+    def read_header(self,fname: str):
+        """Read XRAIN PPI header.
+        Args:
+            fname (str): Input file name (extracted from the tar file).
+        """
         #Encodes of characters are iso2022_jp.
         enc = 'iso2022_jp'
-        with open('./work_conv/' + fname,'rb') as f:
+        with open('./' + self._WORKDIR + '/' + fname,'rb') as f: # Changed from './work_conv/'
             flag = struct.unpack('>B',f.read(1))[0] #Check whether XRAIN PPI or not
             #print(flag)
             if int(flag) != 253:
@@ -209,8 +235,13 @@ class Converter:
         self.n_ray = rinfo[38] #Number of rays
 
 
-    def read_values(self,fname,pname):
-        with open('./work_conv/' + fname,'rb') as f:
+    def read_values(self,fname: str,pname: str):
+        """Read XRAIN PPI data.
+        Args:
+            fname (str): Input file name (extracted from the tar file).
+            pname (str): Parameter name.
+        """
+        with open('./' + self._WORKDIR + '/' + fname,'rb') as f: # Changed from './work_conv/'
             buf = f.read(512)
             f.seek(512,0)
             size = (16 + 2*self.n_range) * self.n_ray
@@ -238,8 +269,12 @@ class Converter:
         return values
 
     #Function to decode quality flag (Currently not used)
-    def read_values_uint8(self,fname):
-        with open('./work_conv/' + fname,'rb') as f:
+    def read_values_uint8(self,fname: str):
+        """Read quality flag.
+        Args:
+            fname (str): Input file name (extracted from the tar file).
+        """
+        with open('./' + self._WORKDIR + '/' + fname,'rb') as f: # Changed from './work_conv/'
             buf = f.read(512)
 
             f.seek(512,0)
@@ -254,6 +289,8 @@ class Converter:
 
 
     def write_cfrad(self):
+        """Write data toCF-Radial file.
+        """
         mode = 'w'
         if self.flag_ow : mode = 'a'
         self.cf = netCDF4.Dataset(self.ncname,mode=mode,format='NETCDF4')
@@ -272,13 +309,15 @@ class Converter:
 
 
     def write_cf_gl_attr(self):
+        """Write global attributes to CF-Radial file.
+        """
         nc = self.cf
 
         nc.setncattr("Conventions","Cf/Radial instrument_parameters")
         nc.setncattr("version", "1.5")
         nc.setncattr("title","XRAIN raw and intermediated data")
         nc.setncattr("institution","Ministry of Land, Infrastructure, Transport and Tourism, Japan")
-        nc.setncattr("references","Converted by Conv_xrain2cfrad.py coded by A.NISHII (Nagoya Univ.)")
+        nc.setncattr("references","Converted by Conv_xrain2cfrad.py coded by A.NISHII")
         nc.setncattr("source",self.fname)
         nc.setncattr("history","")
         nc.setncattr("comment","")
@@ -289,6 +328,8 @@ class Converter:
 
 
     def write_cf_dims(self):
+        """Create dimensions in CF-Radial file.
+        """
         nc = self.cf
 
         nc.createDimension('time',self.n_ray)
@@ -298,6 +339,8 @@ class Converter:
 
 
     def write_cf_gl_vars(self):
+        """Create global variables in CF-Radial file.
+        """
         nc = self.cf
         volume_number = nc.createVariable('volume_number',np.dtype('int32').char)
         volume_number[:] = 0
@@ -319,6 +362,8 @@ class Converter:
 
 
     def write_cf_coord_vars(self):
+        """Create coordinate variables in CF-Radial file.
+        """
         nc = self.cf
 
         time = nc.createVariable('time',np.dtype('double').char,('time'))
@@ -342,6 +387,8 @@ class Converter:
     
 
     def write_cf_loc_vars(self):
+        """Create location variables (latitude, longitude, and altitude) in CF-Radial file.
+        """
         nc = self.cf
 
         lat = nc.createVariable('latitude',np.dtype('double').char)
@@ -358,6 +405,8 @@ class Converter:
 
 
     def write_cf_sweep_vars(self):
+        """Create sweep variables in CF-Radial file.
+        """
         nc = self.cf
 
         sweep_n = nc.createVariable('sweep_number',np.dtype('int32').char,('sweep'))
@@ -378,6 +427,8 @@ class Converter:
 
 
     def write_cf_azelnyq(self):
+        """Create azimuth, elevation, and nyquist velocity variables in CF-Radial file.
+        """
         nc = self.cf
 
         az = nc.createVariable('azimuth',np.dtype('float32').char,('time'))
@@ -408,6 +459,8 @@ class Converter:
     
 
     def write_cf_data_vars(self):
+        """Create data variables in CF-Radial file.
+        """
         nc = self.cf
         
         for n in range(self.n_var):
@@ -415,7 +468,16 @@ class Converter:
             self.Define_variable(nc,self.vars[n],varinfo[0],np.dtype('float32').char, varinfo[1],varinfo[2])
     
 
-    def Define_variable(self,nc,var,varname,dtype_char,standard_name,units):
+    def Define_variable(self,nc: netCDF4.Dataset,var: np.ndarray,varname: str,dtype_char: str,standard_name: str,units: str):
+        """Create data variables in CF-Radial file.
+        Args:
+            nc (netCDF4.Dataset): CF-Radial file.
+            var (numpy.ndarray): Data array.
+            varname (str): Variable name.
+            dtype_char (str): Data type character.
+            standard_name (str): Standard name.
+            units (str): Units.
+        """
         ncvar = nc.createVariable(varname,dtype_char,('time','range'),fill_value=self._FillValueF32)
         ncvar[:] = var
         ncvar.long_name = standard_name
@@ -427,6 +489,8 @@ class Converter:
 
 
     def write_cf_qflg(self):
+        """Create quality flag variables in CF-Radial file.
+        """
         nc = self.cf
         
         varinfo = self.varinfo['RQF0']
@@ -440,6 +504,8 @@ class Converter:
 
 
     def calc_nyq_unfolded(self):
+        """Calculate the extended nyquist velocity for dual-PRF mode because velocity unfolding is already applied.
+        """
         prf1 = self.prf[0]
         prf2 = self.prf[1]
         prf_ref = max(prf1,prf2)
@@ -452,21 +518,34 @@ class Converter:
         return vel_ref * (prf_ref/gcd)
 
 
-    def split_byte(self,inbyte):
+    def split_byte(self,inbyte: int):
+        """Split a byte into two 4-bit values.
+        Args:
+            inbyte (int): Input byte.
+        """
         ms4bit = bin(inbyte>>4)
         ls4bit = bin(inbyte  & 0b00001111)
 
         return ms4bit, ls4bit
 
 
-    def decode_bcd(self,bcd_byte):
+    def decode_bcd(self,bcd_byte: int):
+        """Decode a BCD byte.
+        Args:
+            bcd_byte (int): Input BCD byte.
+        """
         ord_10, ord_1 = self.split_byte(bcd_byte)
         
         dec = 10 * int(ord_10,2) + int(ord_1,2)
         return dec
 
 
-    def calc_gcd(self,a,b):
+    def calc_gcd(self,a: int,b: int):
+        """Calculate the greatest common divisor.
+        Args:
+            a (int): First number.
+            b (int): Second number.
+        """
         while b != 0:
             rem = a%b
             a = b
@@ -476,9 +555,17 @@ class Converter:
 
 #%%
 def main():
-    fname_P008_tar = argv[1]
+    """Main function.
+    """
+    parser = argparse.ArgumentParser(description='Convert XRAIN raw (P008) and intermediate (R005) files to CF-Radial format. Both files must be in the same directory.')
+    parser.add_argument('fname_P008_tar', type=str, help='Input raw (P008) file name.')
+    parser.add_argument('-o', '--outdir', type=str, help='Output directory of the CF-Radial file.')
+    args = parser.parse_args()
+
+    fname_P008_tar = args.fname_P008_tar
     if '-R005-' in fname_P008_tar:
         raise ValueError(f'Input file name must be P008, not R005.\nInput file name: {fname_P008_tar}')
+    fname_R005_tar = fname_P008_tar.replace('P008', 'R005')
     
     print('Input file name (Raw, P008): '+fname_P008_tar)
     if not exists(fname_P008_tar):
@@ -489,15 +576,18 @@ def main():
     if not exists(fname_R005_tar):
         raise FileNotFoundError(f'{fname_R005_tar} Not Found! P008 & R005 files must in the same directory')
     
+    # 出力ディレクトリの処理
+    if args.outdir:
+        outdir = args.outdir
+    else:
+        outdir = None
+    
     conv_P = Converter(mode=0,flag_overwrite=False)
-    conv_P.convert(fname_P008_tar)
+    conv_P.convert(fname_P008_tar, outdir)
     conv_Z = Converter(mode=1,flag_overwrite=True)
-    conv_Z.convert(fname_R005_tar)
+    conv_Z.convert(fname_R005_tar, outdir)
     print('Convert success. Saved to: '+conv_Z.ncname)
 
 #%%
 if __name__ == '__main__':
-    if len(argv) != 2:
-        print(f'ERROR: Invalid number of arguments: N_of_args = {len(argv)}')
-        exit(1)
     main()

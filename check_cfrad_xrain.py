@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import pyart
 
 # %%
-fname = 'cfrad.USHIO00000-20140820-0101-EL010000.nc' #ファイル名を指定(Set Cfrad)
+fname = './testdata/cfrad.DATE000000-20220525-1636-EL020000-DEG030.nc' #ファイル名を指定(Set Cfrad)
 
 #%%
 print('Input filename: '+fname)
@@ -51,7 +51,7 @@ display.plot_ppi('RHOHV', 0, ax=ax_rhv, vmin=0.8,vmax=1.0, colorbar_label='')
 ax_rhv.set(aspect=1,xlabel='',ylabel='')
 
 #plt.show()
-plt.savefig('chk_raw.jpg',bbox_inches='tight')
+#plt.savefig('chk_raw.jpg',bbox_inches='tight')
 
 # %%
 #display.scan_type = 'vpt'
@@ -74,6 +74,8 @@ display.plot_ppi('QF', 0, ax=ax_qf, vmin=0,vmax=32, colorbar_label='')
 ax_qf.set(aspect=1,xlabel='',ylabel='')
 
 #plt.show()
-plt.savefig('chk_intermidiate.jpg',bbox_inches='tight')
+#plt.savefig('chk_intermidiate.jpg',bbox_inches='tight')
 
 print('FINISH')
+
+# %%
