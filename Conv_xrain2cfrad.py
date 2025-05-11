@@ -18,10 +18,10 @@ HISTORY(yyyy/mm/dd)
 2022/10/30 ver 0.1 (First created) by A.NISHII
 2022/12/14 ver 0.2 Added quality flag in output by A.NISHII
 2024/10/07 ver 1.0 Bug fixed by A.NISHII
-2024/10/07 ver 1.1 Modified functions for setting output dir
-2024/10/14 ver 1.2 Modified the format of instrument name
-2025/01/10 ver 1.3 Added some exception handlings in I/O
-2025/05/11 ver 1.4 Added comments and fixed bug by A.NISHII (Copied from testdata)
+2024/10/07 ver 1.1 Modified functions for setting output dir by A.NISHIi
+2024/10/14 ver 1.2 Modified the format of instrument name by A.NISHII
+2025/01/10 ver 1.3 Added some exception handlings in I/O by A.NISHII
+2025/05/11 ver 1.4 Added comments and fixed bug by A.NISHII
 
 MIT License
 Copyright (c) 2022-2025 Akira NISHII
