@@ -1,6 +1,6 @@
 #%%
 """
-Conv_XRAIN2CFrad.py ver 1.4 coded by A.NISHII
+Conv_XRAIN2CFrad.py ver 1.5 coded by A.NISHII
 Convert XRAIN raw and intermediate data to CF-radial ver 1.5
 
 USEAGE
@@ -22,6 +22,7 @@ HISTORY(yyyy/mm/dd)
 2024/10/14 ver 1.2 Modified the format of instrument name by A.NISHII
 2025/01/10 ver 1.3 Added some exception handlings in I/O by A.NISHII
 2025/05/11 ver 1.4 Added comments and fixed bug by A.NISHII
+2025/05/xx ver 1.5 Implemented multiple file processing and searching file from orgdir by A.NISHII
 
 MIT License
 Copyright (c) 2022-2025 Akira NISHII
