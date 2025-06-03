@@ -1,18 +1,24 @@
 #%%
 """
-Conv_XRAIN2CFrad.py ver 1.5 coded by A.NISHII
+Conv_XRAIN2CFrad.py ver 2.0 coded by A.NISHII
 Convert XRAIN raw and intermediate data to CF-radial ver 1.5
 
-USEAGE
-python3 Conv_XRAIN2Cfrad.py path/to/raw(P008)_file
-*Archives of raw files (*P008*.tgz) and intermediate files (*R005*.tgz) must be in the same directory
-*Converted cfradial file is saved in the current directory.
-*Any meta data (e.g., radar coefficient, pulse width) is not output in the current version.
-*You can change the output directory of converted files by changing Converter._outdir
+usage: Conv_xrain2cfrad.py [-h] [-o OUTDIR] fname_P008
+positional arguments:
+  fname_P008            Path of raw (P008) file name (.tgz) or filelist (.txt) containing paths to P008 files.
+options:
+  -h, --help            show this help message and exit
+  -o OUTDIR, --outdir OUTDIR
+                        Output directory of the CF-Radial file.
 
-Format of the input file name: cfrad.site_name-yyyymmdd-hhmmss-ELxxxxxx-DEGyyy.nc
-                               *xxxxxx: elevation number of input file
-                               *yyy   : tenfold of the elevation angle
+*Archives of raw files (*P008*.tgz) and intermediate files (*R005*.tgz) must be in the same directory
+*If the input file is a filelist (.txt), the program will read the paths from the file of P008 files and convert each file.
+*Some meta data (e.g., radar coefficient, pulse width) is not output in the current version.
+*You can specity the output directory by -o option.
+
+Format of the output file name: cfrad.site_name-yyyymmdd-hhmmss-ELxxxxxx-DEGyyy.nc
+                                *xxxxxx: elevation number of the oroginal file.
+                                *yyy   : tenfold of the elevation angle e.g. 1.5 deg -> DEG015
 
 HISTORY(yyyy/mm/dd)
 2022/10/30 ver 0.1 (First created) by A.NISHII
@@ -22,42 +28,28 @@ HISTORY(yyyy/mm/dd)
 2024/10/14 ver 1.2 Modified the format of instrument name by A.NISHII
 2025/01/10 ver 1.3 Added some exception handlings in I/O by A.NISHII
 2025/05/11 ver 1.4 Added comments and fixed bug by A.NISHII
-2025/05/xx ver 1.5 Implemented multiple file processing and searching file from orgdir by A.NISHII
+2025/05/xx ver 2.0 Major update. Implemented multiple file procesesing from filelist (.txt) by A.NISHII
 
-MIT License
-Copyright (c) 2022-2025 Akira NISHII
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
-
-The above copyright notice and this permission notice (including the next paragraph) shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+LICENSE: MIT License
 """
 
 import argparse
-from genericpath import exists
+import datetime
+from os.path import basename, exists, join
+from os import makedirs
+import struct
+from sys import exit
+import tarfile
+import tempfile
+
 import netCDF4
 import numpy as np
-import struct
-import datetime
-import tarfile
-from os.path import basename
-from os import makedirs
-from sys import argv, exit
-import os # Added for _WORKDIR
+
 
 #%%
 class Converter:
     """Converter class for XRAIN data to CF-Radial format.
+    
     """
     _FillValueU8  = 255
     _FillValueU16 = 0
@@ -87,7 +79,7 @@ class Converter:
                             'PW00':['WIDTH','doppler_spectrum_width','m/s']}
         else:
             #Z005 mode
-            self.n_var = 4 #Fixed to 4 (QF is added later)
+            self.n_var = 4 #Fixed to 4 (QF is added later because it is not float (uint8).)
                         #varname_xrain:[varname_cf,standard (long) name,unit]
             self.varinfo = {'RZH0':['DBZ','equivalent_reflectivity_factor','DBZ'],
                             'RZDR':['ZDR','log_differential_reflectivity_hv','DB'],
@@ -95,13 +87,12 @@ class Converter:
                             'RRR0':['RRR','radar_estimated_rain_rate','mm/hr'],
                             'RQF0':['QF','radar_quality_mask','unitless']}
         
-
         if flag_overwrite: self.flag_ow = True
-        # 一時ディレクトリの作成 (Added from testdata)
-        os.makedirs(self._WORKDIR,exist_ok=True)
+        # Create working directory
+        #os.makedirs(self._WORKDIR,exist_ok=True)
 
 
-    def convert(self,fname: str,outdir: str =None):
+    def convert(self, fname: str, outdir: str =None):
         """Convert XRAIN raw and intermediate data to CF-radial.
         Args:
             fname (str): Input file name.
@@ -111,17 +102,22 @@ class Converter:
         #self.ncname = ncname
         if outdir is not None: 
             self._OUTDIR = outdir
-        self.unzip_tar()
-        self.read_xrain_ppi()
-        #Remove -P008 and -R005 from the input file name, and then add the tenfold of the fixed angle to the output netCDF file name.
-        self.ncname = self._OUTDIR+'/cfrad.' + basename(fname).split('.')[0].replace('-P008','').replace('-R005','') + f'-DEG{int(self.fixed_angle*10):03d}.nc'
-        self.write_cfrad()
-    
+        makedirs(self._OUTDIR,exist_ok=True)
+
+        # Note: Archived files are extracted to a temporary directory.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._WORKDIR = tmpdir
+            self.unzip_tar()
+            self.read_xrain_ppi()
+            #Remove -P008 and -R005 from the input file name, and then add the tenfold of the fixed angle to the output netCDF file name.
+            self.ncname = self._OUTDIR+'/cfrad.' + basename(fname).split('.')[0].replace('-P008','').replace('-R005','') + f'-DEG{int(self.fixed_angle*10):03d}.nc'
+            self.write_cfrad()
+        
 
     def unzip_tar(self):
         """Unzip the input file.
         """
-        with tarfile.open(self.fname,'r:gz') as tf:
+        with tarfile.open(self.fname, 'r:gz') as tf:
             self.fnames = tf.getnames()
             tf.extractall(path=self._WORKDIR) # Changed from 'work_conv'
 
@@ -149,11 +145,11 @@ class Converter:
     def read_header(self,fname: str):
         """Read XRAIN PPI header.
         Args:
-            fname (str): Input file name (extracted from the tar file).
+            fname (str): Input file name (extracted from the tgz file).
         """
         #Encodes of characters are iso2022_jp.
         enc = 'iso2022_jp'
-        with open('./' + self._WORKDIR + '/' + fname,'rb') as f: # Changed from './work_conv/'
+        with open(join(self._WORKDIR, fname), 'rb') as f: # Changed from './work_conv/'
             flag = struct.unpack('>B',f.read(1))[0] #Check whether XRAIN PPI or not
             #print(flag)
             if int(flag) != 253:
@@ -239,10 +235,10 @@ class Converter:
     def read_values(self,fname: str,pname: str):
         """Read XRAIN PPI data.
         Args:
-            fname (str): Input file name (extracted from the tar file).
+            fname (str): Input file name (extracted from tgz file).
             pname (str): Parameter name.
         """
-        with open('./' + self._WORKDIR + '/' + fname,'rb') as f: # Changed from './work_conv/'
+        with open(join(self._WORKDIR, fname), 'rb') as f: # Changed from './work_conv/'
             buf = f.read(512)
             f.seek(512,0)
             size = (16 + 2*self.n_range) * self.n_ray
@@ -269,13 +265,14 @@ class Converter:
 
         return values
 
+
     #Function to decode quality flag (Currently not used)
     def read_values_uint8(self,fname: str):
         """Read quality flag.
         Args:
-            fname (str): Input file name (extracted from the tar file).
+            fname (str): Input file name (extracted from the tgz file).
         """
-        with open('./' + self._WORKDIR + '/' + fname,'rb') as f: # Changed from './work_conv/'
+        with open(join(self._WORKDIR, fname), 'rb') as f: # Changed from './work_conv/'
             buf = f.read(512)
 
             f.seek(512,0)
@@ -555,39 +552,80 @@ class Converter:
 
 
 #%%
+def skip_message(code: int, input_file: str):
+    """Show massages to skip the convertsion because of the issues in the input file.
+    """
+    if code == 1:
+        print(f'ERROR: Input file name must be P008, not R005.\nInput file name: {input_file}')
+    elif code == 2:
+        print(f'ERROR: {input_file} Not Found!')
+    elif code == 3:
+        (f'ERROR: {input_file} Not Found! P008 & R005 files must in the same directory')
+
+    print('Skip this file.\n')
+
+
+#%%
 def main():
     """Main function.
     """
     parser = argparse.ArgumentParser(description='Convert XRAIN raw (P008) and intermediate (R005) files to CF-Radial format. Both files must be in the same directory.')
-    parser.add_argument('fname_P008_tar', type=str, help='Input raw (P008) file name.')
+    parser.add_argument('fname_P008', type=str, help='Path of raw (P008) file name (.tgz) or filelist (.txt) containing paths to P008 files.')
     parser.add_argument('-o', '--outdir', type=str, help='Output directory of the CF-Radial file.')
     args = parser.parse_args()
 
-    fname_P008_tar = args.fname_P008_tar
-    if '-R005-' in fname_P008_tar:
-        raise ValueError(f'Input file name must be P008, not R005.\nInput file name: {fname_P008_tar}')
-    fname_R005_tar = fname_P008_tar.replace('P008', 'R005')
+    err_flag = False
+
+    # Check input file type and parse file names
+    files_P008 = []
+    if args.fname_P008.endswith('.txt'):
+        print('Get paths from the filelist text.\n')
+        with open(args.fname_P008, 'r') as f:
+            files_P008 = f.read().splitlines()
+            if not files_P008:
+                raise ValueError('Filelist is empty!')
+    elif args.fname_P008.endswith('.tgz'):
+        files_P008.append(args.fname_P008)
+    else:
+        raise ValueError('Input file must be .tgz or .txt containing paths to P008 files.')
     
-    print('Input file name (Raw, P008): '+fname_P008_tar)
-    if not exists(fname_P008_tar):
-        raise FileNotFoundError(f'{fname_P008_tar} Not Found!')
-    
-    fname_R005_tar = fname_P008_tar.replace('P008','R005')
-    print('Input file name (Intermediated, R005): '+fname_R005_tar)
-    if not exists(fname_R005_tar):
-        raise FileNotFoundError(f'{fname_R005_tar} Not Found! P008 & R005 files must in the same directory')
-    
-    # 出力ディレクトリの処理
+    # Set output directory
     if args.outdir:
         outdir = args.outdir
     else:
         outdir = None
-    
-    conv_P = Converter(mode=0,flag_overwrite=False)
-    conv_P.convert(fname_P008_tar, outdir)
-    conv_Z = Converter(mode=1,flag_overwrite=True)
-    conv_Z.convert(fname_R005_tar, outdir)
-    print('Convert success. Saved to: '+conv_Z.ncname)
+
+    # Convert files
+    for fname_P008_tgz in files_P008:
+        print('Input file name (Raw, P008): ' + fname_P008_tgz)
+        if '-R005-' in fname_P008_tgz:
+            skip_message(1, fname_P008_tgz)
+            err_flag = True
+            continue
+        if not exists(fname_P008_tgz):
+            skip_message(2, fname_P008_tgz)
+            err_flag = True
+            continue
+        
+        # Path to R005 file is generated from P008 file name and assuming the same directory.
+        fname_R005_tgz = fname_P008_tgz.replace('P008','R005')
+        print('Input file name (Intermediated, R005): '+fname_R005_tgz)
+        if not exists(fname_R005_tgz):
+            skip_message(3, fname_R005_tgz)
+            err_flag = True
+            continue
+
+        conv_P = Converter(mode=0,flag_overwrite=False)
+        conv_P.convert(fname_P008_tgz, outdir)
+        conv_Z = Converter(mode=1,flag_overwrite=True)
+        conv_Z.convert(fname_R005_tgz, outdir)
+        print('Convert success. Saved to: '+conv_Z.ncname+'\n')
+
+        del conv_P, conv_Z # Clear memory
+
+    print('Finished.')
+    if err_flag:
+        print('Some files skipped. Please check the messages above.')
 
 #%%
 if __name__ == '__main__':
