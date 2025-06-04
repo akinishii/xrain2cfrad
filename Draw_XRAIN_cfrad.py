@@ -1,6 +1,6 @@
 #%%
 """
-Draw_XRAIN_cfrad.py ver 1.3 coded by A.NISHII (Nagoya Univ., Japan)
+Draw_XRAIN_cfrad.py ver 1.4 coded by A.NISHII (Nagoya Univ., Japan)
 Draw XRAIN PPI data from a cf-radial file converted by Conv_XRAIN2Cfrad.py
 
 USEAGE
@@ -15,18 +15,19 @@ HISTORY(yyyy/mm/dd)
 2024/10/12 ver 1.1 Bug fixed & Drawing Doppler width implemented by A.NISHII
 2024/11/19 ver 1.2 Bug fixed by A.NISHII
 2025/01/10 ver 1.3 Modified order of parameters
+2025/06/04 ver 1.4 Modified colormaps
 
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import colors
+import matplotlib as mpl
 import pyart
 import cartopy.crs as ccrs
 from sys import argv
 from os import makedirs
 from os.path import basename
-from matplotlib import colors
-import matplotlib as mpl
 from cftime import num2date
 from datetime import timedelta
 import warnings
@@ -34,15 +35,15 @@ warnings.simplefilter('ignore')
 
 #%%
 ###Settings###
-fname = '../out_nc/cfrad.HAMAMATSU0-20241003-1731-EL010000-DEG017.nc'
+fname = './testdata/nc/cfrad.TAMURA0000-20220525-1635-EL010000-DEG004.nc'
 use_flist = False #True: Read files from flistname (You can process multiple files at once.) False: Read a file set in fname
 flistname = 'flist2.txt'
 
-extent=[137.1,34.15,138.46,35.23] ##[min_lon,min_lat,max_lon,max_lat]
-lon_ticks = np.arange(137.1,138.46,0.5) #Locations of lon ticks
-lat_ticks = np.arange(34.15,35.23,0.5)   #Locations of lat ticks
+extent=[140.3,37.50,140.4,37.60] ##[min_lon,min_lat,max_lon,max_lat]
+lon_ticks = np.arange(140.3,140.41,0.05) #Locations of lon ticks
+lat_ticks = np.arange(37.50,37.61,0.05)   #Locations of lat ticks
 
-figdir = './fig_ppi_ql' #Directory to save figures
+figdir = './testdata/fig_ppi_ql' #Directory to save figures
 
 #Draw distances from the radar at REF and VEL maps
 draw_cirle = True
@@ -52,19 +53,19 @@ hairsize = 40 #size of hair (corresponding to plt.scatter's size)
 
 #Set colors for REF
 clevsz = np.arange(0,71,5)
-cmapz="pyart_NWSRef"
+cmapz="ChaseSpectral"
 ticksz = clevsz[::2] #Locs of ticks in colorbar (can be same as clevs)
 ##Set colors for VEL
 clevsv=np.arange(-20,21,2)
-cmapv="rainbow"
+cmapv="balance"
 ticksv = clevsv[::2] #Locs of ticks in colorbar (can be same as clevs)
 ##Set colors for ZDR
-clevszdr=np.arange(-5,5.1,0.5)
-cmapzdr="rainbow"
+clevszdr=np.arange(-2,5.1,0.5)
+cmapzdr="HomeyerRainbow"
 tickszdr = clevszdr[::2] #Locs of ticks in colorbar (can be same as clevs)
 ##Set colors for KDP
-clevskdp=np.arange(-5,5.1,0.5)
-cmapkdp="rainbow"
+clevskdp=np.arange(-2,5.1,0.5)
+cmapkdp="HomeyerRainbow"
 tickskdp = clevskdp[::2] #Locs of ticks in colorbar (can be same as clevs)
 ##Set colors for RHOV
 clevsrhv=np.arange(0.7,1.01,0.03)
@@ -72,7 +73,7 @@ cmaprhv="viridis"
 ticksrhv = clevsrhv #Locs of ticks in colorbar (can be same as clevs)
 ##Set colors for W
 clevsw=np.arange(0,10.1,1.0)
-cmapw="rainbow"
+cmapw="HomeyerRainbow"
 ticksw = clevsw #Locs of ticks in colorbar (can be same as clevs)
 
 mask_tuple=None #Conditions for masking (see documents of Pyart for detail)

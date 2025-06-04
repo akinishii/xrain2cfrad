@@ -28,7 +28,7 @@ HISTORY(yyyy/mm/dd)
 2024/10/14 ver 1.2 Modified the format of instrument name by A.NISHII
 2025/01/10 ver 1.3 Added some exception handlings in I/O by A.NISHII
 2025/05/11 ver 1.4 Added comments and fixed bug by A.NISHII
-2025/05/xx ver 2.0 Major update. Implemented multiple file procesesing from filelist (.txt) by A.NISHII
+2025/06/03 ver 2.0 Major update. Implemented multiple file procesesing from filelist (.txt) by A.NISHII
 
 LICENSE: MIT License
 """
