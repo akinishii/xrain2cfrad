@@ -39,9 +39,9 @@ fname = './testdata/nc/cfrad.TAMURA0000-20220525-1635-EL010000-DEG004.nc'
 use_flist = False #True: Read files from flistname (You can process multiple files at once.) False: Read a file set in fname
 flistname = 'flist2.txt'
 
-extent=[140.3,37.50,140.4,37.60] ##[min_lon,min_lat,max_lon,max_lat]
-lon_ticks = np.arange(140.3,140.41,0.05) #Locations of lon ticks
-lat_ticks = np.arange(37.50,37.61,0.05)   #Locations of lat ticks
+extent=[140.4,37.5,140.6,37.7] ##[min_lon,min_lat,max_lon,max_lat]
+lon_ticks = np.arange(140.4,140.61,0.1) #Locations of lon ticks
+lat_ticks = np.arange(37.5,37.71,0.1)   #Locations of lat ticks
 
 figdir = './testdata/fig_ppi_ql' #Directory to save figures
 
@@ -68,7 +68,8 @@ clevskdp=np.arange(-2,5.1,0.5)
 cmapkdp="HomeyerRainbow"
 tickskdp = clevskdp[::2] #Locs of ticks in colorbar (can be same as clevs)
 ##Set colors for RHOV
-clevsrhv=np.arange(0.7,1.01,0.03)
+clevsrhv=np.array([0.7, 0.75, 0.8, 0.85, 0.9,
+                   0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.0])
 cmaprhv="viridis"
 ticksrhv = clevsrhv #Locs of ticks in colorbar (can be same as clevs)
 ##Set colors for W
