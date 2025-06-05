@@ -3,9 +3,9 @@ A python script to convert XRAIN RAW/Intermidiate files to CF-Radial 1.5<br>
 XRAINのRAWデータと1次処理データをCf-Radialに変換するPythonスクリプト
 
 ## 必要なもの (Requirements)
-- Python >= 3.6  
-- numpy >= 1.x  
-- netCDF4  
+- Python >= 3.6
+- numpy >= 2.0
+- netCDF4
 
 ---
 
