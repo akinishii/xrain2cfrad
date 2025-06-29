@@ -29,6 +29,7 @@ HISTORY(yyyy/mm/dd)
 2025/01/10 ver 1.3 Added some exception handlings in I/O by A.NISHII
 2025/05/11 ver 1.4 Added comments and fixed bug by A.NISHII
 2025/06/03 ver 2.0 Major update. Implemented multiple file procesesing from filelist (.txt) by A.NISHII
+2025/06/29 ver 2.1 Added comments describing time zone.
 
 LICENSE: MIT License
 """
@@ -311,16 +312,16 @@ class Converter:
         """
         nc = self.cf
 
-        nc.setncattr("Conventions","Cf/Radial instrument_parameters")
-        nc.setncattr("version", "1.5")
-        nc.setncattr("title","XRAIN raw and intermediated data")
-        nc.setncattr("institution","Ministry of Land, Infrastructure, Transport and Tourism, Japan")
-        nc.setncattr("references","Converted by Conv_xrain2cfrad.py coded by A.NISHII")
-        nc.setncattr("source",self.fname)
-        nc.setncattr("history","")
-        nc.setncattr("comment","")
+        nc.setncattr('Conventions','Cf/Radial instrument_parameters')
+        nc.setncattr('version', '1.5')
+        nc.setncattr('title','XRAIN raw and intermediated data')
+        nc.setncattr('institution','Ministry of Land, Infrastructure, Transport and Tourism, Japan')
+        nc.setncattr('references','Converted by Conv_xrain2cfrad.py coded by A.NISHII')
+        nc.setncattr('source',self.fname)
+        nc.setncattr('history','')
+        nc.setncattr('comment','Time in filename is in JST (Japan Standard Time, UTC+9), but time recorded in the file is in UTC')
         rname = basename(self.fname).split('-')[0].replace('0','')
-        nc.setncattr("instrument_name",'XRAIN_'+rname)
+        nc.setncattr('instrument_name','XRAIN_'+rname)
         nc.setncattr('site_name',rname)
         nc.setncattr('scan_name','')
 
