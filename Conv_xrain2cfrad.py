@@ -1,34 +1,44 @@
 #%%
 """
-Conv_XRAIN2CFrad.py ver 2.0 coded by A.NISHII
+Conv_XRAIN2CFrad.py ver 2.1 coded by A.NISHII
 Convert XRAIN raw and intermediate data to CF-radial ver 1.5
 
-usage: Conv_xrain2cfrad.py [-h] [-o OUTDIR] fname_P008
-positional arguments:
-  fname_P008            Path of raw (P008) file name (.tgz) or filelist (.txt) containing paths to P008 files.
-options:
-  -h, --help            show this help message and exit
-  -o OUTDIR, --outdir OUTDIR
+Dependencies:
+    - numpy: For numerical operations.
+    - netcdf4: For writing CF-Radial format files.
+
+USEAGE
+    Conv_xrain2cfrad.py [-h] [-o OUTDIR] fname_P008
+   
+    positional arguments:
+    fname_P008            Path of raw (P008) file name (.tgz) or filelist (.txt) containing paths to P008 files.
+    
+    options:
+    -h, --help            show this help message and exit
+    -o OUTDIR, --outdir OUTDIR
                         Output directory of the CF-Radial file.
+                 
+NOTES:
+    *Archives of raw files (*P008*.tgz) and intermediate files (*R005*.tgz) must be in the same directory
+    *If the input file is a filelist (.txt), the program will read the paths from the file of P008 files and convert each file.
+    *Some meta data (e.g., radar coefficient, pulse width) is not output in the current version.
+    *You can specity the output directory by -o option.
 
-*Archives of raw files (*P008*.tgz) and intermediate files (*R005*.tgz) must be in the same directory
-*If the input file is a filelist (.txt), the program will read the paths from the file of P008 files and convert each file.
-*Some meta data (e.g., radar coefficient, pulse width) is not output in the current version.
-*You can specity the output directory by -o option.
-
-Format of the output file name: cfrad.site_name-yyyymmdd-hhmmss-ELxxxxxx-DEGyyy.nc
-                                *xxxxxx: elevation number of the oroginal file.
-                                *yyy   : tenfold of the elevation angle e.g. 1.5 deg -> DEG015
+    *Format of the output file name: cfrad.site_name-yyyymmdd-hhmmss-ELxxxxxx-DEGyyy.nc
+                                     xxxxxx: elevation number of the oroginal file.
+                                     yyy   : tenfold of the elevation angle e.g. 1.5 deg -> DEG015
+                                     Datetime in filename is in JST (Japan Standard Time, UTC+9), but time recorded in the file is in UTC.
 
 HISTORY(yyyy/mm/dd)
-2022/10/30 ver 0.1 (First created) by A.NISHII
-2022/12/14 ver 0.2 Added quality flag in output by A.NISHII
-2024/10/07 ver 1.0 Bug fixed by A.NISHII
-2024/10/07 ver 1.1 Modified functions for setting output dir by A.NISHIi
-2024/10/14 ver 1.2 Modified the format of instrument name by A.NISHII
-2025/01/10 ver 1.3 Added some exception handlings in I/O by A.NISHII
-2025/05/11 ver 1.4 Added comments and fixed bug by A.NISHII
-2025/06/03 ver 2.0 Major update. Implemented multiple file procesesing from filelist (.txt) by A.NISHII
+    2022/10/30 ver 0.1 (First created) by A.NISHII
+    2022/12/14 ver 0.2 Added quality flag in output by A.NISHII
+    2024/10/07 ver 1.0 Bug fixed by A.NISHII
+    2024/10/07 ver 1.1 Modified functions for setting output dir by A.NISHIi
+    2024/10/14 ver 1.2 Modified the format of instrument name by A.NISHII
+    2025/01/10 ver 1.3 Added some exception handlings in I/O by A.NISHII
+    2025/05/11 ver 1.4 Added comments and fixed bug by A.NISHII
+    2025/06/03 ver 2.0 Major update. Implemented multiple file procesesing from filelist (.txt) by A.NISHII
+    2025/06/29 ver 2.1 Added comments describing time zone, formatted comments in the code, and fixed output file path. by A.NISHII
 
 LICENSE: MIT License
 """
@@ -110,7 +120,7 @@ class Converter:
             self.unzip_tar()
             self.read_xrain_ppi()
             #Remove -P008 and -R005 from the input file name, and then add the tenfold of the fixed angle to the output netCDF file name.
-            self.ncname = self._OUTDIR+'/cfrad.' + basename(fname).split('.')[0].replace('-P008','').replace('-R005','') + f'-DEG{int(self.fixed_angle*10):03d}.nc'
+            self.ncname = join(self._OUTDIR,'cfrad.' + basename(fname).split('.')[0].replace('-P008','').replace('-R005','') + f'-DEG{int(self.fixed_angle*10):03d}.nc')
             self.write_cfrad()
         
 
@@ -311,16 +321,16 @@ class Converter:
         """
         nc = self.cf
 
-        nc.setncattr("Conventions","Cf/Radial instrument_parameters")
-        nc.setncattr("version", "1.5")
-        nc.setncattr("title","XRAIN raw and intermediated data")
-        nc.setncattr("institution","Ministry of Land, Infrastructure, Transport and Tourism, Japan")
-        nc.setncattr("references","Converted by Conv_xrain2cfrad.py coded by A.NISHII")
-        nc.setncattr("source",self.fname)
-        nc.setncattr("history","")
-        nc.setncattr("comment","")
+        nc.setncattr('Conventions','Cf/Radial instrument_parameters')
+        nc.setncattr('version', '1.5')
+        nc.setncattr('title','XRAIN raw and intermediated data')
+        nc.setncattr('institution','Ministry of Land, Infrastructure, Transport and Tourism, Japan')
+        nc.setncattr('references','Converted by Conv_xrain2cfrad.py coded by A.NISHII')
+        nc.setncattr('source',self.fname)
+        nc.setncattr('history','')
+        nc.setncattr('comment','Time in filename is in JST (Japan Standard Time, UTC+9), but time recorded in the file is in UTC')
         rname = basename(self.fname).split('-')[0].replace('0','')
-        nc.setncattr("instrument_name",'XRAIN_'+rname)
+        nc.setncattr('instrument_name','XRAIN_'+rname)
         nc.setncattr('site_name',rname)
         nc.setncattr('scan_name','')
 
