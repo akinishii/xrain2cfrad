@@ -84,7 +84,7 @@ clevsw=np.arange(0,10.1,1.0)
 cmapw="HomeyerRainbow"
 ticksw = clevsw #Locs of ticks in colorbar (can be same as clevs)
 
-mask_tuple=None #Conditions for masking (see documents of Pyart for detail)
+mask_tuple=None #Conditions for masking (see the documents Pyart for detail)
 
 ###End of Settings###
 
@@ -167,25 +167,21 @@ def draw_MapDisplay(display,param, mask_tuple,cmap,norm,extent,
     Returns:
     - cm: Colormap object used for the display
     """
-
-    # make_axes_locatable を使わずに、まず地図を描画する
+    # not drawing colorbar at this time adjusting for plotting the colorbar is needed.
     display.plot_ppi_map(param,0,mask_tuple=mask_tuple,cmap=cmap,norm=norm,resolution='10m',
                          min_lon=extent[0],min_lat=extent[1],max_lon=extent[2],max_lat=extent[3],
                          fig=fig,ax=ax,raster=True,
                          lon_lines=lon_ticks,lat_lines=lat_ticks, colorbar_flag=False)
     
-    # 描画されたオブジェクト（Mappable）を取得
+    # Get a mappable object for colorbar
     last_plot_mappable = display.plots[-1]
     
-    # fig.colorbarに直接axを渡し、サイズを調整する
-    # shrink: 軸の高さに対するカラーバーの長さの割合 (例: 0.85 = 85%)
-    # fraction: 軸の幅に対するカラーバーの幅の割合
-    # pad: 軸とカラーバーの間の空白
+    # Plot colorbar (fraction and pad are adjusted for better appearance of the colorbar)
     cbar = fig.colorbar(last_plot_mappable, ax=ax, orientation='vertical', ticks=ticks,
                         shrink=1.0, fraction=0.05, pad=0.05)
     cbar.set_label(colorbar_label)
 
-    # 軸のタイトルなどを設定
+    # Set title for the axis
     ax.set_title(ax_title)
     
     return
@@ -239,7 +235,7 @@ for f in fnames:
                          colorbar_label='dBZ',ticks=ticksz,ax_title='REF')
     #Draw circles and a hair on REF
     if draw_hair:
-        axesz.scatter(rlon,rlat,marker='+',s=hairsize,color='k',lw=1.0,transform=ccrs.PlateCarree())
+        axesz.scatter(rlon,rlat,marker='+',s=hairsize,color='r',lw=1.0,transform=ccrs.PlateCarree())
     if draw_cirle:
         for r in circle_dis:
             if r==0: continue
