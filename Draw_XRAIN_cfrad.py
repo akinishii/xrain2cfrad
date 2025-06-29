@@ -5,7 +5,8 @@ Draw XRAIN PPI data from a cf-radial file converted by Conv_XRAIN2Cfrad.py
 
 USEAGE
 1. Setting
-*Set parameters in fron around L30-L70
+* Set parameters in fron around L30-L70
+* if you want to draw only REF and VEL, set draw_only_zv=True
 
 2. Run
 python3 Draw_XRAIN_cfrad.py
