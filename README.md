@@ -11,6 +11,38 @@ XRAINのRAWデータと1次処理データをCf-Radialに変換するPythonス�
 
 
 ## 使い方 (Useage)
+### レーダー地点名と時間範囲を指定して実行(推奨)
+run_xrain2cfrad_orgdir.pyを実行することで、DIASから取得したXRAINディレクトリからそのまま変換可能です。
+1. `run_xrain2cfrad_orgdir.py`と`Conv_xrain2cfrad.py`を、DIASからDLした`XRAIN`ディレクトリと同じディレクトリに置く。
+
+2. 変換対象のレーダー地点(DIASのDLページ記載のアルファベット名。複数指定可)と、日時の範囲を確認する。
+
+3. `run_xrain2cfrad_orgdir.py`を以下のように実行。`start_date`や`end_date`はyyyymmddHHMM形式のJST。
+
+   <code> python3 run_xrain2cfrad_orgdir.py SITE [SITE ...] -d start_date end_date </code>
+
+   例) 船橋局と新横浜局の、2025年3月3日09:00～10:00 JSTのデータを変換する場合。
+
+   <code> python3 run_xrain2cfrad_orgdir.py FUNABASHI SHINYOKO -d 202503030900 202503031000 </code>
+
+   `-o` または `--outdir` オプションで出力ファイルの保存場所を指定できる。また、`-i`または`--inputpath`で任意のディレクトリにあるXRAINディレクトリを読み出し可能。
+   
+   以下の例は`/data/orgdata`にある`XRAIN`ディレクトリを読み込み、`./converted_nc`に保存する場合。
+   
+   ```bash
+   python3 run_xrain2cfrad_orgdir.py FUNABASHI -d 202503030900 202503031000 -i /data/orgdata -o ./converted_nc
+   ```
+
+4. "Convert success: Saved to cfrad.~.nc"と表示されたファイルは変換成功。
+
+    デフォルトでは`./out_nc`ディレクトリにCf-Radial変換されたファイルが保存される。
+
+    出力ファイルのフォーマット(XRAIN船橋局の場合)。<b>ファイル名の時刻はJSTである点に注意！</b>
+
+    `cfrad.FUNABASHI0-yyyymmdd-hhmm-ELxxxxxx-DEGeee.nc`
+    
+
+
 ### 単一のファイルを処理する場合
 1. P008ファイルのアーカイブ(DIASから取得できる，RAWデータのtarfile)とR005ファイルのアーカイブを(同様に取得できる，一次処理データのtarfile)を同じディレクトリに保存する。 
   
@@ -24,15 +56,6 @@ XRAINのRAWデータと1次処理データをCf-Radialに変換するPythonス�
     python3 Conv_xrain2cfrad.py path/to/P008 -o ./converted_nc
     ```
   
-3. "Convert success: Saved to cfrad.~.nc"(~はP008ファイルから取得した場所，日付，仰角番号情報)と表示されたら変換成功。
-
-    デフォルトでは`./out_nc`ディレクトリにCf-Radial変換されたファイルが保存される。
-
-    出力ファイルのフォーマット(XRAIN田村レーダーの場合)
-
-    `cfrad.TAMURA0000-yyyymmdd-hhmm-ELxxxxxx-DEGeee.nc`
-    
-    `xxxxxx`: 仰角番号, `eee`: 仰角の10倍値
 
 ### 複数のファイルを処理する場合
 1. `Conv_xrain2cfrad.py`から <b>P008ファイル(.tar)</b> の相対パスを記載したテキストファイル(`filelist.txt`)を作成する
@@ -45,7 +68,7 @@ XRAINのRAWデータと1次処理データをCf-Radialに変換するPythonス�
 
 
 ## 注意 (Notes)
-レーダーによっては仰角番号が同じで場合でも仰角の値が少し(0.1~0.2度)ずれる場合があります。これは、XRAINのヘッダーに収録されている仰角情報がデータによって異なることにより生じるものです。
+レーダーによっては仰角番号が同じ場合でも仰角の値が若干(0.1~0.2度)ずれる場合があります。これは、XRAINのヘッダーに収録されている仰角代表値がデータにより異なることで生じたものです。現状、仰角の代表値が不明なレーダーもあるため仰角をそろえる処理はしていません。
 
 
 ## その他 (Ohters)
@@ -56,11 +79,8 @@ XRAINのRAWデータと1次処理データをCf-Radialに変換するPythonス�
 
 
 ## Todo
-
-- ヘッダー情報出力モードの実装
-- コードの可読性向上
-- DIASから取ってきたデータをそのままのディレクトリ構造で処理できるモードの追加
-- P008，R005のみの変換に対応させる
+- ヘッダー情報出力スクリプトの実装
+- 変換ファイルの出力ディレクトリを柔軟にする(例: 地点別に分ける)
 
 
 ## 参考
